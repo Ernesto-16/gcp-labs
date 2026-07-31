@@ -1,75 +1,87 @@
+
 # Security Command Center: Cloud Storage Vulnerability Remediation
 
-**Basado en el laboratorio:** *Usa informes para abordar hallazgos (Google Cloud Skill Boost)*
+**Basado en el laboratorio:** *Usa informes para abordar hallazgos (Google Cloud Skills Boost)*
 
-> **Entorno de Laboratorio:** * Google Cloud Platform (GCP)* 
-> **Herramientas:** *Google Security Command Center (SCC), Cloud Storage Console*
+> **Entorno de Laboratorio:** Google Cloud Platform (GCP)  
+> **Herramientas:** Google Security Command Center (SCC), Cloud Storage Console  
+
 ---
-# Objetivos 
+
+##  Objetivos
+
 - **Identificar vulnerabilidades de seguridad:** Auditar los recursos del entorno utilizando Security Command Center (SCC) para detectar configuraciones erróneas de riesgo alto y medio (como accesos públicos no autorizados y falta de políticas uniformes).
+- **Remediar riesgos en Cloud Storage:** Aplicar prácticas de *hardening* mediante la revocación de accesos públicos (`allUsers`) y la activación del acceso uniforme a nivel de bucket (*Uniform Bucket-Level Access*) para prevenir fugas de información.
+- **Validar el estado de cumplimiento:** Evaluar la postura de seguridad del proyecto a través del informe del estándar CIS Google Cloud Platform Foundation 2.0, verificando que los hallazgos activos se reduzcan tras aplicar las correcciones.
 
-- **Remediar riesgos en Cloud Storage:** Aplicar prácticas de hardening mediante la revocación de accesos públicos (allUsers) y la activación del acceso uniforme a nivel de bucket (Uniform Bucket-Level Access) para prevenir fugas de información.
-
-- **Validar el estado de cumplimiento:** Evaluar la postura de seguridad del proyecto a través del informe del estándar CIS Google Cloud Platform Foundation 2.0, verificando que los hallazgos activos se reduzcan a cero tras aplicar las correcciones.
 ---
-## Revisión de vulnerabilidades
-<img width="1257" height="644" alt="image" src="https://github.com/user-attachments/assets/f7e82a24-86fe-4bed-aecd-9be222ec8ff9" />
-Al netrara vemos que nos encontramos principalmnete con 3 vulnerabilidades activas
 
-LCA de buckets públicos (PUBLIC_BUCKET_ACL): Esta entrada indica que hay una entrada de Lista de control de acceso (LCA) para el bucket de almacenamiento que es de acceso público, lo que significa que cualquier persona en Internet puede leer los archivos almacenados en el bucket. Esta es una vulnerabilidad de seguridad de alto riesgo que requiere que se priorice su corrección.
+##  Revisión de Vulnerabilidades
 
-Solo política del bucket inhabilitada (BUCKET_POLICY_ONLY_DISABLED): Esta entrada indica que los permisos uniformes a nivel de bucket no están habilitados en un bucket. El acceso uniforme a nivel de bucket permite controlar quién puede acceder a los buckets y objetos de Cloud Storage, lo que simplifica el modo de otorgar acceso a los recursos de Cloud Storage. Esta es una vulnerabilidad de riesgo medio que también se debe corregir.
+![Revisión de vulnerabilidades inicial](https://github.com/user-attachments/assets/f7e82a24-86fe-4bed-aecd-9be222ec8ff9)
 
-Registro de buckets inhabilitado (BUCKET_LOGGING_DISABLED): Esta entrada indica que hay un bucket de almacenamiento que no tiene habilitado el registro. Esta es una vulnerabilidad de bajo riesgo que no es necesario corregir en esta situación.
+Al entrar a la consola de Security Command Center, nos encontramos principalmente con **3 vulnerabilidades activas**:
 
- ## Inspececcion de vulnearabilidades a resolver
+1. **LCA de buckets públicos (`PUBLIC_BUCKET_ACL`):**  
+   Esta entrada indica que existe una regla en la Lista de Control de Acceso (ACL / LCA) del bucket de almacenamiento que lo hace de acceso público, lo que significa que cualquier persona en Internet puede leer los archivos almacenados. Es una vulnerabilidad de seguridad de **alto riesgo** que requiere priorizar su corrección.
 
- <img width="1280" height="746" alt="image" src="https://github.com/user-attachments/assets/f9290175-df87-4b4e-98a0-be10070d81c0" />
- Del lado izquiedo podemos apreciar 76 activas y 1 inactiva inicialmnete al revisar
+2. **Solo política del bucket inhabilitada (`BUCKET_POLICY_ONLY_DISABLED`):**  
+   Indica que los permisos uniformes a nivel de bucket no están habilitados. El acceso uniforme a nivel de bucket permite controlar quién puede acceder a los buckets y objetos de Cloud Storage mediante políticas centralizadas de IAM, simplificando la gestión de permisos. Es una vulnerabilidad de **riesgo medio** que también se debe corregir.
 
-LCA de buckets públicos (PUBLIC_BUCKET_ACL): Esta entrada indica que hay una entrada de Lista de control de acceso (LCA) para el bucket de almacenamiento que es de acceso público, lo que significa que cualquier persona en Internet puede leer los archivos almacenados en el bucket. Esta es una vulnerabilidad de seguridad de alto riesgo que requiere que se priorice su corrección.
+3. **Registro de buckets inhabilitado (`BUCKET_LOGGING_DISABLED`):**  
+   Indica que hay un bucket de almacenamiento que no tiene habilitado el registro de auditoría. Es una vulnerabilidad de **bajo riesgo** que no es necesario corregir para este escenario de laboratorio.
 
-Solo política del bucket inhabilitada (BUCKET_POLICY_ONLY_DISABLED): Esta entrada indica que los permisos uniformes a nivel de bucket no están habilitados en un bucket. El acceso uniforme a nivel de bucket permite controlar quién puede acceder a los buckets y objetos de Cloud Storage, lo que simplifica el modo de otorgar acceso a los recursos de Cloud Storage. Esta es una vulnerabilidad de riesgo medio que también se debe corregir.
+---
 
-## Remediación
+##  Inspección de Vulnerabilidades a Resolver
 
-### BUCKET_POLICY_ONLY_DISABLED
+![Inspección de vulnerabilidades a resolver](https://github.com/user-attachments/assets/f9290175-df87-4b4e-98a0-be10070d81c0)
 
-<img width="1280" height="491" alt="image" src="https://github.com/user-attachments/assets/53de7bd1-0e5f-4bec-93a1-b528d0d812cb" />
+Del lado izquierdo podemos apreciar **76 hallazgos activos y 1 inactivo** inicialmente al revisar.
 
-Cambiamos a uniforme con el proposito de que Bucket Policy Only  elc cual  obliga a que todos los permisos se manejen de forma centralizada a nivel de bucket con políticas de IAM resolviendo la vulnerabilidad de riesgo de nivel  medio 
+- **LCA de buckets públicos (`PUBLIC_BUCKET_ACL`):** Indica una regla ACL pública abierta hacia Internet, permitiendo la lectura sin autenticación (Riesgo Alto).
+- **Solo política del bucket inhabilitada (`BUCKET_POLICY_ONLY_DISABLED`):** Inexistencia de control de acceso uniforme a nivel de bucket (Riesgo Medio).
 
-<img width="532" height="391" alt="image" src="https://github.com/user-attachments/assets/b18bd5f6-4ce3-4a43-a7ce-8c5d717aa88f" />
+---
 
+##  Remediación de Vulnerabilidades
 
-### PUBLIC_BUCKET_ACL
+### 1. Despliegue de Acceso Uniforme (`BUCKET_POLICY_ONLY_DISABLED`)
 
-<img width="1177" height="445" alt="image" src="https://github.com/user-attachments/assets/a0774dce-5c91-40a3-b77d-e96cbce04640" />
+![Modificar acceso al bucket](https://github.com/user-attachments/assets/53de7bd1-0e5f-4bec-93a1-b528d0d812cb)
 
-Al estar cualquier ussuario tenia acceso a la información del bucked 
-<img width="1075" height="733" alt="image" src="https://github.com/user-attachments/assets/ea37ad43-a087-4867-a284-cf17f070013f" />
+Cambiamos la configuración del bucket a **Acceso uniforme (Uniform)** con el propósito de activar *Bucket Policy Only*. Esto obliga a que todos los permisos se manejen de forma centralizada a nivel de bucket mediante políticas de IAM, resolviendo la vulnerabilidad de riesgo medio.
 
-Ahora quitamos el acceso publico de de esta manera solucionamos las vulnerabilidades de nivel medio ,alta 
-# Extra para experimentara habilitamos los registros de los Firewall 
-<img width="713" height="218" alt="image" src="https://github.com/user-attachments/assets/1576848c-6087-44bf-9a91-e6867bf78590" />
+![Confirmación de Acceso Uniforme](https://github.com/user-attachments/assets/b18bd5f6-4ce3-4a43-a7ce-8c5d717aa88f)
 
-<img width="1240" height="367" alt="image" src="https://github.com/user-attachments/assets/a6eac9ab-570c-47cb-949e-f9a5374445fe" />
+---
 
+### 2. Revocación de Acceso Público (`PUBLIC_BUCKET_ACL`)
 
-## Auditoria
-De esta manera resolvemos lás vulnerabilidades planteadas y comprobamos los resultados atraves del scc filtrando ahora en inactivo y comos  euede ver a diferencia de la imagen inicial con solo un vulnerabilidad activa ahora hay 7
-<img width="1280" height="498" alt="image" src="https://github.com/user-attachments/assets/247fb568-7dff-49e2-8945-f086d874ec7f" />
+![Inspección de permisos públicos](https://github.com/user-attachments/assets/a0774dce-5c91-40a3-b77d-e96cbce04640)
 
+Al estar activo el acceso público, cualquier usuario en Internet tenía acceso libre a la información guardada en el bucket.
 
+![Quitar acceso público](https://github.com/user-attachments/assets/ea37ad43-a087-4867-a284-cf17f070013f)
 
+Eliminamos la entidad pública (`allUsers`). De esta manera se corrigen y solucionan definitivamente las vulnerabilidades de nivel alto y medio.
 
+---
 
+##  Extra (Para Experimentar): Habilitación de Registros en Firewall
 
+![Configuración de Firewall Logs 1](https://github.com/user-attachments/assets/1576848c-6087-44bf-9a91-e6867bf78590)
 
+![Configuración de Firewall Logs 2](https://github.com/user-attachments/assets/a6eac9ab-570c-47cb-949e-f9a5374445fe)
 
+Se habilitó el registro de logs en las reglas del Firewall para monitorear el tráfico y analizar eventos de red como ejercicio adicional de hardening e inspección.
 
+---
 
+##  Auditoría y Verificación de Resultados
 
+De esta manera resolvemos las vulnerabilidades planteadas y comprobamos los resultados a través de **Security Command Center (SCC)**. 
 
- 
+Filtrando ahora por el estado **Inactivo**, como se puede observar a diferencia de la imagen inicial (donde solo había 1 vulnerabilidad inactiva), **ahora se muestran 7 hallazgos inactivos (corregidos)**.
 
+![Verificación final en SCC](https://github.com/user-attachments/assets/247fb568-7dff-49e2-8945-f086d874ec7f)
