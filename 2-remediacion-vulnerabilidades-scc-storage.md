@@ -12,9 +12,34 @@
 
 - **Identificar vulnerabilidades de seguridad:** Auditar los recursos del entorno utilizando Security Command Center (SCC) para detectar configuraciones erróneas de riesgo alto y medio (como accesos públicos no autorizados y falta de políticas uniformes).
 - **Remediar riesgos en Cloud Storage:** Aplicar prácticas de *hardening* mediante la revocación de accesos públicos (`allUsers`) y la activación del acceso uniforme a nivel de bucket (*Uniform Bucket-Level Access*) para prevenir fugas de información.
-- **Validar el estado de cumplimiento:** Evaluar la postura de seguridad del proyecto a través del informe del estándar CIS Google Cloud Platform Foundation 2.0, verificando que los hallazgos activos se reduzcan tras aplicar las correcciones.
-
 ---
+## 📐 Diagrama de Arquitectura de Seguridad
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                GOOGLE CLOUD PLATFORM (GCP)                                   │
+│                                                                                              │
+│   ┌───────────────────┐                  ┌──────────────────────────────────────────────┐    │
+│   │   INTERNET        │                  │        SECURITY COMMAND CENTER (SCC)         │    │
+│   │  (allUsers)       │                  │   - Evaluación de Postura (CIS Benchmark)    │    │
+│   └─────────┬─────────┘                  └──────────────────────▲───────────────────────┘    │
+│             │                                                   │                            │
+│             │  Acceso Denegado                                  │ Auditoría &                │
+│             │ (PUBLIC_BUCKET_ACL Revocado)                      │ Cumplimiento               │
+│             ▼                                                   │                            │
+│   ┌─────────┴───────────────────────────────────────────────────┴──────────────────────┐     │
+│   │   CLOUD STORAGE BUCKET                                                             │     │
+│   │   • Nivel de Permisos: Uniform Bucket-Level Access (Habilitado)                    │     │
+│   │   • Acceso Externo: Revocado (allUsers / Lectura Pública Eliminada)                │     │
+│   └────────────────────────────────────────────────────────────────────────────────────┘     │
+│                                                                                              │
+│   ┌─────────────────────────────────────────┐     Logs      ┌──────────────────────────┐     │
+│   │   REGLAS DE FIREWALL                    ├──────────────►│     CLOUD LOGGING        │     │
+│   │   - Firewall Flow Logs Habilitados      │               └──────────────────────────┘     │
+│   └─────────────────────────────────────────┘                                                │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 
 ##  Revisión de Vulnerabilidades
 
@@ -50,7 +75,7 @@ Del lado izquierdo podemos apreciar **76 hallazgos activos y 1 inactivo** inicia
 
 ![Modificar acceso al bucket](https://github.com/user-attachments/assets/53de7bd1-0e5f-4bec-93a1-b528d0d812cb)
 
-Cambiamos la configuración del bucket a **Acceso uniforme (Uniform)** con el propósito de activar *Bucket Policy Only*. Esto obliga a que todos los permisos se manejen de forma centralizada a nivel de bucket mediante políticas de IAM, resolviendo la vulnerabilidad de riesgo medio.
+Cambiamos la configuración del bucket a **Acceso uniforme (Uniform)** con el propósito de activar *Bucket Policy Only*. Para que todos los permisos se manejen de forma centralizada a nivel de bucket mediante políticas de IAM, resolviendo la vulnerabilidad de riesgo medio.
 
 ![Confirmación de Acceso Uniforme](https://github.com/user-attachments/assets/b18bd5f6-4ce3-4a43-a7ce-8c5d717aa88f)
 
