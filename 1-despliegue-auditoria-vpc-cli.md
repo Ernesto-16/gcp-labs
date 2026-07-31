@@ -1,6 +1,6 @@
 # Despliegue y Auditoría de VPC Personalizada via CLI
 
-**Basado en:** Creación de una VPC con Cloud Shell en Google Cloud Platform
+**Basado en el laboratorio:** *Creación de una VPC con Cloud Shell en Google Cloud Platform*
 
 > **Entorno de Laboratorio:** Google Cloud Platform (GCP)  
 > **Herramienta:** Google Cloud Shell CLI (`gcloud`)  
