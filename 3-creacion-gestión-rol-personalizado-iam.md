@@ -1,6 +1,6 @@
 #  Creación y Gestión de Roles Personalizados en Google Cloud IAM
 
-**Basado en el laboratorio:** *Usa informes para abordar hallazgos (Google Cloud Skills Boost)*
+**Basado en el laboratorio:** *Crea un rol en Google Cloud IAM (Google Cloud Skills Boost)*
 
 > **Entorno de Laboratorio:** Google Cloud Platform (GCP)  
 > **Herramientas:** Google Cloud Console, IAM & Admin Console, Policy Analyzer  
