@@ -49,7 +49,7 @@ De manera sencilla para entender mejor los permisos y roles:
 
 ---
 
-## 🛠️ Creación del Rol Personalizado
+##  Creación del Rol Personalizado
 
 ![Creación de rol personalizado](https://github.com/user-attachments/assets/4b205ea8-a1c0-47da-9516-823a9016d8cd)
 
