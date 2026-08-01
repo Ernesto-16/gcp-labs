@@ -13,9 +13,9 @@
 - **Identificar vulnerabilidades de seguridad:** Auditar los recursos del entorno utilizando Security Command Center (SCC) para detectar configuraciones erróneas de riesgo alto y medio (como accesos públicos no autorizados y falta de políticas uniformes).
 - **Remediar riesgos en Cloud Storage:** Aplicar prácticas de *hardening* mediante la revocación de accesos públicos (`allUsers`) y la activación del acceso uniforme a nivel de bucket (*Uniform Bucket-Level Access*) para prevenir fugas de información.
 ---
-## 📐 Diagrama de Arquitectura de Seguridad
+##  Diagrama de Arquitectura de Seguridad
 
-```text
+```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                GOOGLE CLOUD PLATFORM (GCP)                                   │
 │                                                                                              │
