@@ -18,7 +18,7 @@ Al completar este laboratorio práctico, se habrá adquirido experiencia prácti
 
 ---
 
-##  Arquitectura de la Solución
+## Diagrama de Arquitectura de la Solución
 
 <img width="1098" height="220" alt="image" src="https://github.com/user-attachments/assets/75682409-d3cb-4f03-aaa4-dd6c53af29b3" />
 
