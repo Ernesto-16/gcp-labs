@@ -1,123 +1,148 @@
-#  Aprovisionamiento de Red VPC y Reglas de Firewall en GCP mediante Terraform
+# Implementación y Auditoría de Reglas de Firewall en VPC
 
-**Basado en el laboratorio:** *Cambia las reglas de firewall con Terraform y Cloud Shell (Google Cloud Skills Boost)*
+**Basado en el laboratorio:** *Accede a un firewall y crea una regla (Google Cloud Skills Boost)*
 
 > **Entorno:** Google Cloud Platform (GCP)  
-> **Herramientas:** VPC Network, Cloud Firewall, Cloud Shell, Terraform, Linux/Bash, Git.
+> **Herramientas:** VPC Network, Cloud Firewall, Compute Engine, Cloud Logging (Explorador de registros).  
+
+## Objetivos
+
+*   **Configurar protección perimetral:** Crear e implementar reglas de firewall (permitir y denegar) en una red de Nube Privada Virtual (VPC) para controlar el tráfico entrante.
+*   **Gestionar recursos mediante etiquetas:** Aplicar etiquetas de red (*network tags*, ej. `http-server`) para dirigir reglas de seguridad a instancias de máquinas virtuales específicas sin afectar a toda la red.
+*   **Generar y validar tráfico de red:** Probar la conectividad de un servidor web Apache accediendo a su dirección IP externa desde un navegador.
+*   **Analizar telemetría y registros de seguridad:** Utilizar el *Explorador de registros (Log Explorer)* de Google Cloud para inspeccionar los **Registros de flujo de VPC (VPC Flow Logs)** y los **Registros de Firewall**, verificando direcciones IP de origen/destino (como la IP interna `10.1.3.2`), puertos (80 y 22) y el estado de las conexiones (permitidas o denegadas).
 
 ---
 
-## Objetivos 
+## Diagrama de Arquitectura de Seguridad
 
-* **Configuración del Entorno Cloud Shell:** Solucionar e instalar las dependencias de Terraform mediante la personalización del entorno bash (`.customize_environment`).
-* **Gestión de Infraestructura como Código (IaC):** Clonar e inspeccionar manifiestos HCL (`main.tf`) para la definición declarativa de recursos de red en GCP.
-* **Aprovisionamiento Automatizado:** Inicializar (`terraform init`) e implementar (`terraform apply`) una VPC y un conjunto de reglas de firewall dinámicas en la nube.
-* **Verificación de Recursos:** Validar desde la consola web de Google Cloud la correcta propagación de las políticas de firewall (filtrado TCP/ICMP) y la VPC creada.
+<img width="1494" height="793" alt="image" src="https://github.com/user-attachments/assets/37ed7af5-873a-41ea-b1ef-decb1d7ede17" />
 
 ---
 
-## Arquitectura 
+## Implementación de Firewall
 
-<img width="1218" height="768" alt="image" src="https://github.com/user-attachments/assets/0247fba2-4b76-4aac-92ea-5d2303e538be" />
+Ocupamos una red privada ya incluida por defecto en el laboratorio (`vpc-net`).
+
+<img width="1194" height="477" alt="image" src="https://github.com/user-attachments/assets/cbd05159-a696-4c40-aa3e-2834fe28c4a6" />
+
+### Notas del laboratorio (Explicadas con analogías)
+
+*   **Prioridad (Priority):**
+    *   **Qué es:** El orden de mando del "guardia de seguridad".
+    *   **Cómo funciona:** Se mide con números del 0 al 65,535. Cuanto más bajo sea el número, más autoridad tiene la regla (es como el rango militar: un general con rango 1 manda más que un soldado con rango 1000).
+    *   **Ejemplo:** Si tienes una regla con prioridad 100 que dice "Bloquear todo" y otra regla con prioridad 1000 que dice "Permitir internet", el guardia obedecerá primero la de prioridad 100. El valor por defecto siempre es 1000.
+
+*   **¿Qué pasa si tienen la misma prioridad?**
+    *   Preferentemente no debe pasar, pero en esos casos se aplican dos reglas de desempate:
+        1.  **Deny (Rechazar) le gana a Allow (Permitir):** Si una regla con prioridad 1000 dice Permitir y otra regla también con prioridad 1000 dice Bloquear (para el mismo puerto y origen), Google Cloud **siempre prioriza el bloqueo** por seguridad.
+        2.  **Orden alfabético del nombre:** Si ambas reglas tienen la misma prioridad y hacen exactamente lo mismo, Google Cloud las evalúa basándose en el nombre de la regla en orden alfabético (de la A a la Z).
+
+*   **Dirección del tráfico (Direction of traffic):**
+    *   Es hacia dónde va a mirar el guardia para aplicar la seguridad.
+    *   **Entrada (Ingress):** Tráfico que viene de fuera (o de otra red) que intenta entrar hacia tus servidores virtuales (VMs). Es la que usamos en este laboratorio.
+    *   **Salida (Egress):** Tráfico que generan tus servidores virtuales para salir hacia internet o hacia otras redes.
+
+*   **Acción en caso de coincidencia (Action on match):**
+    *   **Qué es:** La orden que toma el guardia si se cumple con la regla.
+    *   **Permitir (Allow):** Deja pasar el tráfico sin problemas.
+    *   **Rechazar (Deny):** Bloquea el tráfico.
+
+*   **Destinos y Etiquetas de destino (Targets):**
+    *   **Qué es:** Es a qué servidor o servidores se les va a aplicar esta regla.
+    *   **Todas las instancias:** La regla aplica para absolutamente todas las VMs.
+    *   **Etiquetas de destino especificadas (Network Tags):** Le dices al guardia: *"Esta regla solo aplica para las máquinas que lleven puesto el gafete de servidor web"*. Aquí usamos la etiqueta `http-server`.
+
+Una vez teniendo las configuraciones del firewall, procedemos a implementarlas:
+
+<img width="1183" height="853" alt="image" src="https://github.com/user-attachments/assets/9ba09298-9a32-442d-9d07-ad9872357f93" />
+
+---
+
+### Conceptos Adicionales: Protocolos y Puertos
+
+#### Protocolos
+*   **TCP (El ordenado y seguro):**
+    *   Establece conexión previa, verifica que todo llegue bien, ordena los paquetes y reintenta enviar los datos si algo falla.
+    *   **Cuándo usarlo:** Cuando la precisión de los datos es más importante que la velocidad (ej. bases de datos, páginas web tradicionales, correos).
+*   **UDP (El rápido y sin confirmación):**
+    *   Envía los datos a toda velocidad sin verificar si la otra computadora los recibió y sin pedir reintentos.
+    *   **Cuándo usarlo:** Cuando el tiempo real es más importante que perder un pequeño paquete.
+    *   **Casos de uso reales:** Streaming de video y llamadas en vivo (Zoom, Meet, Twitch). *(Nota: Aunque algunas tecnologías web modernas como HTTP/3 empiezan a usar UDP, la web tradicional y las bases de datos dependen de TCP).*
+
+#### Puertos y su Analogía
+Los puertos son como los **códigos de radio de la policía**. Cuando dicen un número, ya sabes exactamente de qué se trata:
+*   **Puerto 80:** Lo ocupamos para saber qué es el HTTP (tráfico web sin cifrar).
+*   **Puerto 443:** Es el HTTPS, ideal para seguridad web porque cifra los datos.
+*   **Puerto 22:** Es el protocolo SSH. Cifra la información y se usa para administrar servidores de forma remota y segura.
+
+<img width="1280" height="822" alt="image" src="https://github.com/user-attachments/assets/efe14f34-2904-4aa7-9f5c-4dedc2c1352d" />
 
 ---
 
-##  Despliegue del Entorno de Trabajo
+## Comprobación de la creación de la regla
 
-Terraform sirve para optimizar en este caso  agilizaremos  la configuración, inicializamos el entorno clonando un repositorio oficial de ejemplos de Terraform directamente en Cloud Shell:
-
-```bash
-cloudshell_open --repo_url "https://github.com/terraform-google-modules/docs-examples.git" --print_file "./motd" --dir "firewall_basic" --page "editor" --tutorial "./tutorial.md" --open_in_editor "main.tf" --force_new_clone
-```
-
-Análisis detallado del comando `cloudshell_open`:
-
-* **`--repo_url "https://..."`**: Le indica a Cloud Shell qué repositorio de Git debe clonar en este caso  la lista de ejemplos oficiales de Terraform para Google Cloud (docs-examples.git). Este comando ejecuta internamente un `git clone`.
-* **`--print_file "./motd"`**: Imprime un mensaje inicial que se encuntra casi al final de ejecutar el comando en la consola. En este caso advierte: "These examples use real resources that will be billed to the Google Cloud Platform project you use - so make sure that you run 'terraform destroy' before quitting!".
-* **`--dir "firewall_basic"`**: Cambia el directorio de trabajo a la subcarpeta firewall_basi por lo cual los comandos posteriores en la terminal iniciarán en esa ubicación.
-* **`--page "editor"`**: Cambia la interfaz visual para iniciar directamente con el entorno gráfico de Cloud Shell Editor (basado en VS Code) en lugar de solo la terminal.
-* **`--tutorial "./tutorial.md"`**: Activa el panel lateral derecho con la guía del tutorial paso a paso de como usar Terraform la cual funciona solo si ya esta incluida en el entorno.
-* **`--open_in_editor "main.tf"`**: Abre automáticamente una pestaña en el editor con el archivo main.tf (el código HCL principal de Terraform que define la VPC y el Firewall).
-* **`--force_new_clone"`**: Elimina cualquier carpeta o clon antiguo para descargar una copia totalmente limpia desde GitHub y evitar conflictos.
-
-Inmediatamente se abre el editor con las configuraciones en lenguaje HCL listas para inspeccionar:
-Además podemos visualizar nuevamente el archivo al estar ya en en el entorno con 
-```bash
-cat main.tf
-```
-<img width="1264" height="400" alt="image" src="https://github.com/user-attachments/assets/bc8a4d78-ceca-429a-bbae-eaaccaf4facf" />
+<img width="1280" height="754" alt="image" src="https://github.com/user-attachments/assets/0c179e83-81df-47d7-b04d-6967194c580b" />
 
 
-###  Resolución de Dependencias (Instalación de Terraform)
-Antes de ejecutar Terraform, guardamos el ID de nuestro proyecto de GCP en una variable de entorno para vincular las ejecuciones:
-
-```bash
-export GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-01-236d93d38030
-```
-
-Al intentar ejecutar `terraform init`, la terminal nos notifica que el comando no existe porque el binario de Terraform no está instalado en la máquina virtual temporal de Cloud Shell:
 
 
-#### Solución: Configuración de `.customize_environment`
-Para solucionar esto permanentemente dentro de la sesión, utilizamos el editor de texto por terminal `nano` para editar el script de arranque del entorno:
-
-```bash
-nano $HOME/.customize_environment
-```
-
-**¿Qué hace nano y este archivo?**
-`nano` es un editor de texto dentro de la terminal de Linux. El archivo `$HOME/.customize_environment` es un script oculto que Cloud Shell ejecuta automáticamente cada vez que la máquina virtual se enciende para instalar o personalizar dependencias del usuario.
-
-Dentro del editor nano, escribimos las siguientes líneas de comandos:
-
-```bash
-# 1. Descarga la clave criptográfica oficial (GPG) de HashiCorp y la guarda en el llavero del sistema para verificar la autenticidad de los paquetes.
-wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-
-# 2. Agrega la URL del repositorio oficial de HashiCorp a las fuentes de software de APT en la distribución Linux.
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-
-# 3. Actualiza el índice del gestor de paquetes de Debian/Ubuntu e instala el binario de Terraform.
-sudo apt update && sudo apt install terraform
-```
-
-**Pasos para guardar y salir en Nano:**
-1. Presiona `Ctrl + O` (guardar archivo).
-2. Presiona `Enter` para confirmar el nombre.
-3. Presiona `Ctrl + X` (salir del editor nano).
-
-Posteriormente, ejecutamos manualmente el script para aplicar la instalación sin necesidad de reiniciar la sesión, y abrimos un nuevo intérprete de comandos bash para refrescar el PATH:
-
-```bash
-bash $HOME/.customize_environment
-bash
-```
-
-###  Análisis y Despliegue de Infraestructura
-Con Terraform instalado correctamente, ejecutamos el flujo estándar de Infraestructura como Código (IaC):
-
-1. **Inicialización (`terraform init`)**
-   Inicializa el directorio de trabajo, analiza los archivos `.tf` y descarga el proveedor oficial de Google Cloud (`hashicorp/google`).
-2. **Planificación (`terraform plan`)**
-   Realiza una lectura del estado actual en GCP y compara con el código, mostrando los cambios exactos que se aplicarán en la nube.
-3. **Aplicación (`terraform apply`)**
-   Crea los recursos en Google Cloud Platform. Escribimos `yes` para autorizar la ejecución.
-
-Al finalizar, navegamos en la consola web de GCP a **Redes VPC** y **Reglas de Firewall** para verificar que la red y las reglas de filtrado de tráfico fueron creadas correctamente.
-
-<img width="1280" height="331" alt="image" src="https://github.com/user-attachments/assets/e61848f6-ce34-41a6-97f5-0e45883b4481" />
-
-Comprobamos que corresponde con lo desplegado en Terrafrom
-<img width="788" height="814" alt="image" src="https://github.com/user-attachments/assets/dd2d0c22-b885-494d-ae31-ff6b82b03c6d" />
+Ingresamos a la página por medio de la IP externa de la VM para generar tráfico y registros:
 
 
-###  Limpieza del Entorno
-Para evitar el consumo indeseado de créditos o recursos en la cuenta de GCP, eliminamos toda la infraestructura aprovisionada ejecutando:
 
-```bash
-terraform destroy
-```
-Confirmamos con `yes` y Terraform eliminará en orden inverso todas las reglas de Firewall y la red VPC de manera automática.
+
+<img width="1280" height="745" alt="image" src="https://github.com/user-attachments/assets/3ef52d8b-fbbd-4b1c-a8cd-512148125b9f" />
+<img width="851" height="540" alt="image" src="https://github.com/user-attachments/assets/fa568c27-491d-4b51-8826-a491a36e8a82" />
 
 ---
+
+## Log Explorer (Explorador de registros)
+
+Una vez dentro, en resultados seleccionamos subredes. En nombre del registro, seleccionamos `compute.googleapis.com/vpc_flows` e ingresamos el siguiente comando (sustituyendo con nuestra IP externa) en imagen no se ve la dirección ip utilizada pero esta se puede octener atraves de una pagina como: https://www.whatismyip.com/ 
+
+```text
+jsonPayload.connection.src_ip="TU_IP_EXTERNA"
+```
+
+<img width="1280" height="857" alt="image" src="https://github.com/user-attachments/assets/0a68c165-4670-4fc7-ac93-8b2767c04116" />
+
+Podemos obtener el registro filtrando por los registros del Firewall, la sub red y nuestra dirección IP :
+
+<img width="1158" height="452" alt="image" src="https://github.com/user-attachments/assets/7b68b353-3b34-470b-8bc7-e8fbae1e72d0" />
+
+Después de analizar los detalles de esta entrada de registro, notamos que se permitió el tráfico de red (en el puerto 80 de HTTP) ya que  la regla de firewall `allow-http-ssh` que creamos anteriormente . Sabemos que la conexión fue exitosa porque hay intercambio de bytes y no hay ningún mensaje de "denegado".
+
+Al expandir el registro en formato JSON podemos ver lo siguiente:
+
+<img width="578" height="196" alt="image" src="https://github.com/user-attachments/assets/ad648b83-1e70-460b-b754-72e2313c9c2e" />
+
+*   **`dest_ip`:** Es la dirección IP de destino del servidor web.
+*   **`dest_port`:** Es el número del puerto de destino del servidor web (Puerto 80).
+*   **`protocol`:** El protocolo es 6, que es el número estándar de la IANA para el tráfico TCP.
+*   **`src_ip`:** Es la dirección IP de origen de la computadora cliente.
+*   **`src_port`:** Es el número de puerto de origen asignado a la computadora. Suele ser un puerto aleatorio entre 49152 y 65535.
+
+---
+
+## Nueva regla para denegar el ingreso a la página
+
+<img width="1199" height="513" alt="image" src="https://github.com/user-attachments/assets/ff477747-e429-46d1-b8cb-12cb91453c98" />
+
+Con la configuración anterior implementada:
+
+<img width="1042" height="843" alt="image" src="https://github.com/user-attachments/assets/e5f22abb-cd53-4258-883b-f19e650148a3" />
+
+Ingresamos nuevamente mediante la IP externa de la VM, confirmando que el acceso ha sido denegado por el navegador:
+
+<img width="607" height="174" alt="image" src="https://github.com/user-attachments/assets/3bc053d9-e758-49cd-9040-0cc02def06f6" />
+
+### Confirmación final en Log Explorer
+
+Revisando los registros de tipo *Firewall* :
+
+<img width="745" height="180" alt="image" src="https://github.com/user-attachments/assets/605271d9-5202-498a-a2d8-e1ca39752652" />
+
+Ahora aparece en el estado de "denegado",  y así podemos confirmar que la nueva  regla de bloqueo funciona de manera correcta.
+
 
