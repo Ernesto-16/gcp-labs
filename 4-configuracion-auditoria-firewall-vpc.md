@@ -1,4 +1,4 @@
-# ☁️ Aprovisionamiento de Red VPC y Reglas de Firewall en GCP mediante Terraform
+#  Aprovisionamiento de Red VPC y Reglas de Firewall en GCP mediante Terraform
 
 **Basado en el laboratorio:** *Cambia las reglas de firewall con Terraform y Cloud Shell (Google Cloud Skills Boost)*
 
@@ -7,7 +7,7 @@
 
 ---
 
-## 🎯 Objetivos 
+## Objetivos 
 
 * **Configuración del Entorno Cloud Shell:** Solucionar e instalar las dependencias de Terraform mediante la personalización del entorno bash (`.customize_environment`).
 * **Gestión de Infraestructura como Código (IaC):** Clonar e inspeccionar manifiestos HCL (`main.tf`) para la definición declarativa de recursos de red en GCP.
@@ -16,15 +16,15 @@
 
 ---
 
-## 📐 Arquitectura de la Solución
+## Arquitectura 
 
 <img width="1218" height="768" alt="image" src="https://github.com/user-attachments/assets/0247fba2-4b76-4aac-92ea-5d2303e538be" />
 
 ---
 
-## 🚀 Despliegue del Entorno de Trabajo
+##  Despliegue del Entorno de Trabajo
 
-Para agilizar la configuración, inicializamos el entorno clonando un repositorio oficial de ejemplos de Terraform directamente en Cloud Shell:
+Terraform sirve para optimizar en este caso  agilizaremos  la configuración, inicializamos el entorno clonando un repositorio oficial de ejemplos de Terraform directamente en Cloud Shell:
 
 ```bash
 cloudshell_open --repo_url "https://github.com/terraform-google-modules/docs-examples.git" --print_file "./motd" --dir "firewall_basic" --page "editor" --tutorial "./tutorial.md" --open_in_editor "main.tf" --force_new_clone
@@ -32,17 +32,23 @@ cloudshell_open --repo_url "https://github.com/terraform-google-modules/docs-exa
 
 Análisis detallado del comando `cloudshell_open`:
 
-* **`--repo_url "https://..."`**: Le indica a Cloud Shell qué repositorio de Git debe clonar automáticamente. Es la lista de ejemplos oficiales de Terraform para Google Cloud (docs-examples.git). Este comando ejecuta internamente un `git clone`.
-* **`--print_file "./motd"`**: Imprime un mensaje inicial ("Message of the Day") en la consola. En este caso advierte: "These examples use real resources that will be billed to the Google Cloud Platform project you use - so make sure that you run 'terraform destroy' before quitting!".
-* **`--dir "firewall_basic"`**: Cambia el directorio de trabajo (working directory) a la subcarpeta firewall_basic. Todo comando posterior en la terminal iniciará en esa ubicación.
+* **`--repo_url "https://..."`**: Le indica a Cloud Shell qué repositorio de Git debe clonar en este caso  la lista de ejemplos oficiales de Terraform para Google Cloud (docs-examples.git). Este comando ejecuta internamente un `git clone`.
+* **`--print_file "./motd"`**: Imprime un mensaje inicial que se encuntra casi al final de ejecutar el comando en la consola. En este caso advierte: "These examples use real resources that will be billed to the Google Cloud Platform project you use - so make sure that you run 'terraform destroy' before quitting!".
+* **`--dir "firewall_basic"`**: Cambia el directorio de trabajo a la subcarpeta firewall_basi por lo cual los comandos posteriores en la terminal iniciarán en esa ubicación.
 * **`--page "editor"`**: Cambia la interfaz visual para iniciar directamente con el entorno gráfico de Cloud Shell Editor (basado en VS Code) en lugar de solo la terminal.
-* **`--tutorial "./tutorial.md"`**: Activa el panel lateral derecho con la guía del tutorial paso a paso.
+* **`--tutorial "./tutorial.md"`**: Activa el panel lateral derecho con la guía del tutorial paso a paso de como usar Terraform la cual funciona solo si ya esta incluida en el entorno.
 * **`--open_in_editor "main.tf"`**: Abre automáticamente una pestaña en el editor con el archivo main.tf (el código HCL principal de Terraform que define la VPC y el Firewall).
 * **`--force_new_clone"`**: Elimina cualquier carpeta o clon antiguo para descargar una copia totalmente limpia desde GitHub y evitar conflictos.
 
 Inmediatamente se abre el editor con las configuraciones en lenguaje HCL listas para inspeccionar:
+Además podemos visualizar nuevamente el archivo al estar ya en en el entorno con 
+```bash
+cat main.tf
+```
+<img width="1264" height="400" alt="image" src="https://github.com/user-attachments/assets/bc8a4d78-ceca-429a-bbae-eaaccaf4facf" />
 
-### ⚙️ Resolución de Dependencias (Instalación de Terraform)
+
+###  Resolución de Dependencias (Instalación de Terraform)
 Antes de ejecutar Terraform, guardamos el ID de nuestro proyecto de GCP en una variable de entorno para vincular las ejecuciones:
 
 ```bash
@@ -50,6 +56,7 @@ export GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-01-236d93d38030
 ```
 
 Al intentar ejecutar `terraform init`, la terminal nos notifica que el comando no existe porque el binario de Terraform no está instalado en la máquina virtual temporal de Cloud Shell:
+
 
 #### Solución: Configuración de `.customize_environment`
 Para solucionar esto permanentemente dentro de la sesión, utilizamos el editor de texto por terminal `nano` para editar el script de arranque del entorno:
@@ -86,7 +93,7 @@ bash $HOME/.customize_environment
 bash
 ```
 
-### 🏗️ Análisis y Despliegue de Infraestructura
+###  Análisis y Despliegue de Infraestructura
 Con Terraform instalado correctamente, ejecutamos el flujo estándar de Infraestructura como Código (IaC):
 
 1. **Inicialización (`terraform init`)**
@@ -98,7 +105,13 @@ Con Terraform instalado correctamente, ejecutamos el flujo estándar de Infraest
 
 Al finalizar, navegamos en la consola web de GCP a **Redes VPC** y **Reglas de Firewall** para verificar que la red y las reglas de filtrado de tráfico fueron creadas correctamente.
 
-### 🗑️ Limpieza del Entorno
+<img width="1280" height="331" alt="image" src="https://github.com/user-attachments/assets/e61848f6-ce34-41a6-97f5-0e45883b4481" />
+
+Comprobamos que corresponde con lo desplegado en Terrafrom
+<img width="788" height="814" alt="image" src="https://github.com/user-attachments/assets/dd2d0c22-b885-494d-ae31-ff6b82b03c6d" />
+
+
+###  Limpieza del Entorno
 Para evitar el consumo indeseado de créditos o recursos en la cuenta de GCP, eliminamos toda la infraestructura aprovisionada ejecutando:
 
 ```bash
