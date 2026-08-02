@@ -1,4 +1,5 @@
-# Aprovisionamiento de Red VPC y Reglas de Firewall en GCP mediante Terraform
+#  Aprovisionamiento de Red VPC y Reglas de Firewall en GCP mediante Terraform
+
 **Basado en el laboratorio:** *Cambia las reglas de firewall con Terraform y Cloud Shell (Google Cloud Skills Boost)*
 
 > **Entorno:** Google Cloud Platform (GCP)  
@@ -15,102 +16,119 @@
 
 ---
 
+## Arquitectura 
 
-## Notas Técnicas
-
-> **Solución a la falta del binario de Terraform:**
-> Durante la ejecución inicial, el entorno de Cloud Shell no contaba con Terraform instalado correctamente. Se agregó el repositorio oficial de HashiCorp y su clave GPG al script `~/.customize_environment` para garantizar su disponibilidad y ejecución mediante:
-> ```bash
-> nano $HOME/.customize_environment
-> bash $HOME/.customize_environment
-> ```
-## Arquitectura
 <img width="1218" height="768" alt="image" src="https://github.com/user-attachments/assets/0247fba2-4b76-4aac-92ea-5d2303e538be" />
 
+---
 
-## Despliegue de vpc y firewall
-> ```bash
-> cloudshell_open --repo_url "https://github.com/terraform-google-modules/docs-examples.git" --print_file "./motd" --dir "firewall_basic" --page >
-> "editor" --tutorial "./tutorial.md" --open_in_editor "main.tf" --force_new_clone
-> ```
+##  Despliegue del Entorno de Trabajo
 
-cloudshell_open: En el entorno d etrabbajo actual ejecua lo siguinete
+Terraform sirve para optimizar en este caso  agilizaremos  la configuración, inicializamos el entorno clonando un repositorio oficial de ejemplos de Terraform directamente en Cloud Shell:
 
---repo_url "https://...": Le indica a Cloud Shell qué repositorio de Git debe clonar automáticamente. lista de ejemplos oficiales de Terraform para Google Cloud (docs-examples.git) ete comando internamente ejecuta git clone
+```bash
+cloudshell_open --repo_url "https://github.com/terraform-google-modules/docs-examples.git" --print_file "./motd" --dir "firewall_basic" --page "editor" --tutorial "./tutorial.md" --open_in_editor "main.tf" --force_new_clone
+```
 
---print_file "./motd":Imprime lo que venga en este archivo del repositorio
+Análisis detallado del comando `cloudshell_open`:
 
-dicho mensaj es :
-These examples use real resources that will be billed to the
-Google Cloud Platform project you use - so make sure that you
-run "terraform destroy" before quitting!
+* **`--repo_url "https://..."`**: Le indica a Cloud Shell qué repositorio de Git debe clonar en este caso  la lista de ejemplos oficiales de Terraform para Google Cloud (docs-examples.git). Este comando ejecuta internamente un `git clone`.
+* **`--print_file "./motd"`**: Imprime un mensaje inicial que se encuntra casi al final de ejecutar el comando en la consola. En este caso advierte: "These examples use real resources that will be billed to the Google Cloud Platform project you use - so make sure that you run 'terraform destroy' before quitting!".
+* **`--dir "firewall_basic"`**: Cambia el directorio de trabajo a la subcarpeta firewall_basi por lo cual los comandos posteriores en la terminal iniciarán en esa ubicación.
+* **`--page "editor"`**: Cambia la interfaz visual para iniciar directamente con el entorno gráfico de Cloud Shell Editor (basado en VS Code) en lugar de solo la terminal.
+* **`--tutorial "./tutorial.md"`**: Activa el panel lateral derecho con la guía del tutorial paso a paso de como usar Terraform la cual funciona solo si ya esta incluida en el entorno.
+* **`--open_in_editor "main.tf"`**: Abre automáticamente una pestaña en el editor con el archivo main.tf (el código HCL principal de Terraform que define la VPC y el Firewall).
+* **`--force_new_clone"`**: Elimina cualquier carpeta o clon antiguo para descargar una copia totalmente limpia desde GitHub y evitar conflictos.
 
---dir "firewall_basic"	Navega a la subcarpeta: Una vez clonado el repositorio, cambia el directorio de trabajo (working directory) a la carpeta firewall_basic. Todo comando que ejecutes en la terminal empezará en ese directorio
-.
---page "editor":Cambia la interfaz visual: En lugar de abrir solo la pantalla negra de la terminal, fuerza a Cloud Shell a iniciar con la interfaz gráfica del Cloud Shell Editor (el entorno de desarrollo basado en VS Code).
-
-
---tutorial "./tutorial.md":Activa el panel lateral derecho de tutoriales
-
---open_in_editor "main.tf"	 Hace que el editor que antes ya se le diimos que se ejecute  abra automáticamente una pestaña con el archivo main.tf (el código principal de Terraform que define las reglas de Firewall y la VPC
-
---force_new_clone	 :este parámetro elimina la carpeta antigua y descarga una copia completamente limpia y nueva desde GitHub para evitar conflictos.
-
-imendiantemnete se abre el editor con las configuraciones
+Inmediatamente se abre el editor con las configuraciones en lenguaje HCL listas para inspeccionar:
 <img width="1016" height="597" alt="image" src="https://github.com/user-attachments/assets/a0ab5254-ef43-494a-ad1c-0a5b11b1211f" />
-<img width="1137" height="264" alt="image" src="https://github.com/user-attachments/assets/2b1f75a6-492a-4f0a-9a17-2ac2a17b5e2d" />
-## Analisiis de recursoso de terrafrom
 
-una vez ejecutado el comando anaterioro ahora 
 
+Además podemos visualizar nuevamente el archivo al estar ya en en el entorno con:
+```bash
+cat main.tf
+```
+<img width="1264" height="400" alt="image" src="https://github.com/user-attachments/assets/bc8a4d78-ceca-429a-bbae-eaaccaf4facf" />
+
+
+###  Resolución de Dependencias (Instalación de Terraform)
+Antes de ejecutar Terraform, guardamos el ID de nuestro proyecto de GCP en una variable de entorno para vincular las ejecuciones:
+
+```bash
 export GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-01-236d93d38030
-guardamos el id del proyecto ene una  varibale
+```
 
-y en mi caso al ejjecutar terrafrom init veo que en la aterminal que no no esta instalada 
+Al intentar ejecutar `terraform init`, la terminal nos notifica que el comando no existe porque el binario de Terraform no está instalado en la máquina virtual temporal de Cloud Shell:
 <img width="1497" height="228" alt="image" src="https://github.com/user-attachments/assets/3273e1e6-a18f-4fa4-8a52-c45a67968233" />
- ejecuto esto comando 
- nano $HOME/.customize_environment
- sirve para:
 
- posteriomenete dentro del editor escribo
- wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
- significa:
- despues 
- echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-significa
-despues 
+
+
+#### Solución: Configuración de `.customize_environment`
+Para solucionar esto permanentemente dentro de la sesión, utilizamos el editor de texto por terminal `nano` para editar el script de arranque del entorno:
+
+```bash
+nano $HOME/.customize_environment
+```
+
+**¿Qué hace nano y este archivo?**
+`nano` es un editor de texto dentro de la terminal de Linux. El archivo `$HOME/.customize_environment` es un script oculto que Cloud Shell ejecuta automáticamente cada vez que la máquina virtual se enciende para instalar o personalizar dependencias del usuario.
+
+Dentro del editor nano, escribimos las siguientes líneas de comandos:
+
+```bash
+# 1. Descarga la clave criptográfica oficial (GPG) de HashiCorp y la guarda en el llavero del sistema para verificar la autenticidad de los paquetes.
+wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+# 2. Agrega la URL del repositorio oficial de HashiCorp a las fuentes de software de APT en la distribución Linux.
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+# 3. Actualiza el índice del gestor de paquetes de Debian/Ubuntu e instala el binario de Terraform.
 sudo apt update && sudo apt install terraform
-y por ultimo para guardar los canbio clk + o entren clk + x
+```
 
-porteriormnete en la terminal 
+**Pasos para guardar y salir en Nano:**
+1. Presiona `Ctrl + O` (guardar archivo).
+2. Presiona `Enter` para confirmar el nombre.
+3. Presiona `Ctrl + X` (salir del editor nano).
+
+Posteriormente, ejecutamos manualmente el script para aplicar la instalación sin necesidad de reiniciar la sesión, y abrimos un nuevo intérprete de comandos bash para refrescar el PATH:
+
+```bash
 bash $HOME/.customize_environment
+bash
+```
 
-parra poder 
+###  Análisis y Despliegue de Infraestructura
+Con Terraform instalado correctamente, ejecutamos el flujo estándar de Infraestructura como Código (IaC):
 
-despues bash
+1. **Inicialización (`terraform init`)**
+   Inicializa el directorio de trabajo, analiza los archivos `.tf` y descarga el proveedor oficial de Google Cloud (`hashicorp/google`).
+2. **Planificación (`terraform plan`)**
+   Realiza una lectura del estado actual en GCP y compara con el código, mostrando los cambios exactos que se aplicarán en la nube.
+3. **Aplicación (`terraform apply`)**
+   Crea los recursos en Google Cloud Platform. Escribimos `yes` para autorizar la ejecución.
+   
+   
+Cuando ejecutamos terraform  plan nos ayuda a confirmar los cambios al finalizar su ejecución
+<img width="758" height="40" alt="image" src="https://github.com/user-attachments/assets/e134c634-4eec-4ad2-82e9-f379032f533c" />
 
-para 
+Al finalizar, navegamos en la consola web de GCP a **Redes VPC** y **Reglas de Firewall** para verificar que la red y las reglas de filtrado de tráfico fueron creadas correctamente.
 
-despues ahor asi terrafrom init 
-<img width="1280" height="435" alt="image" src="https://github.com/user-attachments/assets/e1a31c5d-e7b4-402c-b7a8-d0472493af05" />
+<img width="1280" height="331" alt="image" src="https://github.com/user-attachments/assets/e61848f6-ce34-41a6-97f5-0e45883b4481" />
 
-despues terrafrom aply
+Comprobamos que corresponde con lo desplegado en Terrafrom
+<img width="788" height="814" alt="image" src="https://github.com/user-attachments/assets/dd2d0c22-b885-494d-ae31-ff6b82b03c6d" />
 
-<img width="686" height="309" alt="image" src="https://github.com/user-attachments/assets/cbd2d900-cd14-4462-bd4a-0c4527e8bde2" />
-confirmamos con 
-terraform plan
-<img width="1132" height="276" alt="image" src="https://github.com/user-attachments/assets/5f30f21d-9ccd-423c-8118-eff4e5a285c2" />
 
-verificamos en redes vpc al ver la nueva vpc veremos loq ue configuramos 
+###  Limpieza del Entorno
+Para evitar el consumo indeseado de créditos o recursos en la cuenta de GCP, eliminamos toda la infraestructura aprovisionada ejecutando:
 
-en este caso no los vamso a ocupara mas asiq ue los vamsoa  sdestruir
+```bash
 terraform destroy
-<img width="1133" height="82" alt="image" src="https://github.com/user-attachments/assets/996ea238-a727-4a5c-b746-5c2117c58f92" />
+```
+Confirmamos con `yes` y Terraform eliminará en orden inverso todas las reglas de Firewall y la red VPC de manera automática.
 
-
-<img width="1100" height="731" alt="image" src="https://github.com/user-attachments/assets/f4eed9ce-b4e6-4e91-b642-df9cf033b80b" />
-
-
+---
 
 
 
