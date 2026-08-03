@@ -76,15 +76,48 @@ nano $HOME/.customize_environment
 Dentro del editor nano, escribimos las siguientes líneas de comandos:
 
 ```bash
-# 1. Descarga la clave criptográfica oficial (GPG) de HashiCorp y la guarda en el llavero del sistema para verificar la autenticidad de los paquetes.
+
 wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-# 2. Agrega la URL del repositorio oficial de HashiCorp a las fuentes de software de APT en la distribución Linux.
+
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-# 3. Actualiza el índice del gestor de paquetes de Debian/Ubuntu e instala el binario de Terraform.
+
 sudo apt update && sudo apt install terraform
 ```
+**Comandos detallados**  
+
+**Primer comando**  
+
+* **`wget`**: Es una herramienta utilizada para descargar archivos desde internet.
+* **`-O -`**: Cuando esta en su forma de -O le dice a wget con qué nombre guardar el archivo. Sin embargo, al ponerle el otro guion -, le dicimos: "No lo guardes en el disco duro, simplemente escupe todo el texto de la llave aquí mismo en la terminal.
+* **`[https://apt.releases](https://apt.releases)...`**: Es la dirección web (URL) donde HashiCorp(dueños de Terraform) publica su llave de seguridad.  
+* **|**: Este es una herramienta  toma el resultado (el texto) del comando que está a su izquierda y pasarlo directamente como entrada al comando que está a su derecha.
+* **`gpg`**: Es el programa de Linux que se encarga de manejar la criptografía, las firmas digitales y las llaves de seguridad en estecaso lo ocuapamos para  que convierta ese texto en un formato binario especial.
+* **`-o`**: Es el parámetro le  dice dónde guardar el resultado final. En este caso, lo está guardando dentro de la ruta /usr/share/keyrings/, que es la carpeta oficial y recomendada para llaves de seguridad de programas de terceros.
+
+
+**Segundo Comando**  
+
+* **`echo "..."`**: Sirve para imprimir o generar un texto que es el que está entre comillas " ".
+* **`deb:`**: Significa que es un repositorio para sistemas Debian/Ubuntu.
+* **`[arch=$(dpkg --print-architecture)...]`**: Aquí le pregunta a tu computadora: "¿Qué arquitectura de procesador usas?" y se autocompleta  
+* **`signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg`**: Aquí le decimos "Cuando descargues cosas de esta tienda, usa la llave de seguridad que guardamos en el paso anterior para verificar que no haya virus.
+* **`[https://apt.releases.hashicorp.com](https://apt.releases.hashicorp.com)`**: La dirección web de la "tienda" oficial.
+* **`$(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs)`**: Este comando encuentra el nombre de la versión de linux.
+* **`|`**: En este caso toda esa dirección larga y personalizada que acaba de generar el comando echo y se la pasa al siguiente comando en lugar de mostrarla en la pantalla.
+* **`tee`**: Es un comando que toma el texto que le llegó por la tubería y lo escribe dentro de un archivo. Se usa tee junto con sudo porque es la forma más segura en Linux de escribir texto dentro de una carpeta protegida del sistema.
+* **`/etc/apt/sources.list.d/hashicorp.list`**: Esta es la ruta exacta y el nombre del archivo de texto que se va a crear para que de esta manera tenga todo lo necesario y lo reconozca en el sistema.
+
+**Tercer comando**  
+
+* **`sudo`** Le dice al sistema que ejecute el comando con privilegios de administrador
+* **`apt`**: Es la herramienta que se encarga de buscar, descargar e instalar software.
+* **`update`**: Esta acción le ordena a apt que descargue la lista más reciente de paquetes y sus versiones desde los repositorios oficiales.
+* **`&&`**: Es el operador condicional en el cual si la primera instrucción se puedo ejecutar la segunda se puede ejecutar.
+* **`install`**: Es la instrucción que le dice a apt que quieres descargar e instalar un programa en tu computadora, junto con cualquier otra dependencia * (otros programas menores) que este necesite para funcionar.
+* **`terraform`**: Es el nombre exacto del paquete que quieres instalar. En este caso, es la popular herramienta de Infraestructura como Código (IaC) creada por HashiCorp.
+
 
 **Pasos para guardar y salir en Nano:**
 1. Presiona `Ctrl + O` (guardar archivo).
