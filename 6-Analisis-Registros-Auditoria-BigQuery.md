@@ -181,7 +181,34 @@ De todo lo anterior  únicamente nos va dar ahora las  eliminaciones de buckest 
 Al final tenemos la ruta exacta en canbio si solo ocupamos laa linea 3 sera más lento ya que no descartamos nada y es más  costoso por ello es buena practractiva buscara por capas hastala llegara  alao que queremos.
 
 ## SQL BIGQUERY
-
-
+```bash
+SELECT
+  timestamp,
+  resource.labels.instance_id,
+  protopayload_auditlog.authenticationInfo.principalEmail,
+  protopayload_auditlog.resourceName,
+  protopayload_auditlog.methodName
+FROM
+`auditlogs_dataset.cloudaudit_googleapis_com_activity_*`
+WHERE
+  PARSE_DATE('%Y%m%d', _TABLE_SUFFIX) BETWEEN
+  DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND
+  CURRENT_DATE()
+  AND resource.type = "gce_instance"
+  AND operation.first IS TRUE
+  AND protopayload_auditlog.methodName = "v1.compute.instances.delete"
+ORDER BY
+  timestamp,
+  resource.labels.instance_id
+LIMIT
+  1000;
+```
+bloque select- from= Con la palabra select como lo dise selecionamos lo que queremos ver al final en este caso:
+timestamp: La fecha y hora exacta en la que se ejecutó la acción.
+resource.labels.instance_id: El número de identificación único de la máquina virtual que fue afectada
+...principalEmail: El "quién". Muestra el correo electrónico del usuario o la cuenta de servicio que ordenó la eliminación
+...resourceName: La ruta completa de GCP hacia el recurso que fue eliminado (incluye el proyecto y la zona)
+...methodName: El nombre del método de la API que se llamó.
+`auditlogs_dataset.cloudaudit_googleapis_com_activity_*`: Apunta a tus registros de actividad administrativa (Admin Activity logs). El asterisco (*) al final es crucial: indica que estás consultando una tabla fragmentada (sharded table) dividida por días.
 
 
