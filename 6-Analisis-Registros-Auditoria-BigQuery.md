@@ -135,7 +135,7 @@ Elimina el primer bucket. El parámetro --recursive (recursivo) sirve para  entr
 gcloud storage rm --recursive gs://$DEVSHELL_PROJECT_ID-test
 Elimina el primer bucket. El parámetro --recursive (recursivo)  al igual que el anterior pero ahora es al buket con con la terminación "-test"
 
-
+Ahora si tomaramos todas las acciones anteriores co0mo un ataque podemos ver lo que paso d ela siguinete manera para ello oucpamos otra cuenta 
 
 Verifcamos nuevamnete 
 ```bash
@@ -209,6 +209,80 @@ resource.labels.instance_id: El número de identificación único de la máquina
 ...principalEmail: El "quién". Muestra el correo electrónico del usuario o la cuenta de servicio que ordenó la eliminación
 ...resourceName: La ruta completa de GCP hacia el recurso que fue eliminado (incluye el proyecto y la zona)
 ...methodName: El nombre del método de la API que se llamó.
-`auditlogs_dataset.cloudaudit_googleapis_com_activity_*`: Apunta a tus registros de actividad administrativa (Admin Activity logs). El asterisco (*) al final es crucial: indica que estás consultando una tabla fragmentada (sharded table) dividida por días.
+`auditlogs_dataset.cloudaudit_googleapis_com_activity_*`: Apunta a tus registros de actividad administrativa (Admin Activity logs). El 
+FROM (De dónde sacamos los datos)
+(*):asterisco (*) al final  indica que estás consultando una tabla fragmentada (sharded table) dividida por días ya que google crea una tabal por dia y de esta forma las juntamso en 1 sola.
+auditlogs_dataset: Es el "Dataset" (conjunto de datos) que es donde guardamos todos los registros de auditoría.
+(.)separamso alcarpeta del arachivo.
+cloudaudit_googleapis_com_activity_: Es el prefijo del nombre de la tabla. Google nombra así por defecto a todas las tablas que registran "actividades administrativas" (quién creó, modificó o eliminó algo).
+PARSE_DATE toma ese texto y, usando el formato %Y%m%d (Año de 4 dígitos, Mes de 2, Día de 2), lo convierte en un objeto de fecha real
 
+
+DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND
+  CURRENT_DATE():Calcula la fecha de hoy le résta 7 días y con BETWEEN busca los datos que esten entre  esa fecha y hoy 
+  resource.type = "gce_instance": Al asignar que tipo de recurso descartamos  bases de datos, redes o almacenamiento.dejando solo las instancias de Compute Engine.
+  _TABLE_SUFFIX: es una varible que recibe el vlor de las consultas frgmnetadas 
+  
+operation.first IS TRUE:Nos ayuda  a que la consulta nos devuelvva solo el priemr eventoq ue coincida
+...methodName = "v1.compute.instances.delete": El gatillo exacto. Le dice a la consulta que solo busque acciones de borrado
+ORDER BY timestamp, resource.labels.instance_id: con lsiguiente prioridad se ordena
+Ordena todas las filas desde la más antigua hasta la más reciente. devido al uso de timestamp
+prioridad 2:BigQuery usa el ID de la instancia. Si los tiempos son iguales, ordenará esas filas específicas por orden alfabético o numérico según su ID 
+al final de  todo  el filtrado de toda la información que queremso limutamos los resulatdos a olo 1000 registros 
+
+al finald e una forma epxlicita comos si hableramso al dataset pidiendole algo con palabras:
+
+Ve a mi base de datos (auditlogs_dataset) y, usando el asterisco (*) como comodín, atrapa y junta todas las tablas diarias fragmentadas que comiencen con el nombre cloudaudit_googleapis_com_activity_.
+
+Sin embargo, para no gastar dinero escaneando años de historial, revisa el texto exacto que el asterisco está reemplazando en el nombre de cada tabla usando la variable _TABLE_SUFFIX. Convierte ese texto en una fecha matemática (PARSE_DATE) y abre únicamente las tablas cuyo sufijo de fecha caiga entre los últimos 7 días y el día de hoy; al resto ni las toques.
+
+Ahora sí, de las tablas que abriste, fíltrame los eventos donde el recurso afectado sea estrictamente una máquina virtual (gce_instance), donde la orden específica haya sido eliminarla (v1.compute.instances.delete), y asegúrate de capturar solo el registro inicial de esa operación (operation.first) para no mostrarme filas duplicadas.
+
+De los eventos que pasen todos estos filtros, extráeme estos 5 datos: la fecha/hora exacta, el ID único de la máquina, el correo de quien ejecutó el borrado, la ruta completa del recurso en la nube y el nombre del método usado
+
+
+ahora al ejecutar la siguiente consulta similar a la anterior
+canbiando:
+En el SELECT, cambia instance_id por bucket_name. En el WHERE, cambia gce_instance por gcs_bucket. Esta consulta ya no rastrea máquinas 
+virtuales, ahora rastrea quién borró Buckets de Cloud Storage
+En el WHERE, cambia el método a "storage.buckets.delete
+operation.first IS TRUE ya que borrar un buket s más rpido
+Todo elc omando dise :
+
+Ve a mi base de datos (auditlogs_dataset) y, usando el asterisco (*) como comodín, atrapa y junta todas las tablas diarias fragmentadas que comiencen con el nombre cloudaudit_googleapis_com_activity_.
+
+De nuevo, para no gastar dinero escaneando años de historial, revisa el texto exacto que el asterisco está reemplazando usando la variable _TABLE_SUFFIX. Convierte ese texto en una fecha matemática (PARSE_DATE) y abre únicamente las tablas cuyo sufijo caiga entre los últimos 7 días y el día de hoy.
+
+De las tablas que sí abriste, fíltrame los eventos donde el recurso afectado sea estrictamente un Bucket de Cloud Storage (gcs_bucket) y donde la orden específica haya sido eliminarlo (storage.buckets.delete).
+
+De los eventos que cumplan eso, extráeme estos 5 datos: la fecha/hora exacta, el nombre del bucket, el correo de quien lo borró, la ruta completa del recurso y el nombre del método usado.
+
+Finalmente, entrégame esta lista ordenada cronológicamente por fecha. Si dos buckets se borraron exactamente al mismo tiempo, usa el nombre del bucket (bucket_name, no instance_id) para desempatar, y ponle un tope máximo de 1000 resultados en pantalla
+
+lo anterior tomando enc uenta todo pero de manera simle solo
+devuelve los usuarios que borraron buckets de Cloud Storage en los últimos 7 días
+
+```bash
+SELECT
+  timestamp,
+  resource.labels.bucket_name,
+  protopayload_auditlog.authenticationInfo.principalEmail,
+  protopayload_auditlog.resourceName,
+  protopayload_auditlog.methodName
+FROM
+`auditlogs_dataset.cloudaudit_googleapis_com_activity_*`
+WHERE
+  PARSE_DATE('%Y%m%d', _TABLE_SUFFIX) BETWEEN
+  DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND
+  CURRENT_DATE()
+  AND resource.type = "gcs_bucket"
+  AND protopayload_auditlog.methodName = "storage.buckets.delete"
+LIMIT
+  1000;
+ORDER BY
+  timestamp,
+  resource.labels.bucket_name
+LIMIT
+  1000;
+```
 
