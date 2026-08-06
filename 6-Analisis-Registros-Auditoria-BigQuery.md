@@ -71,7 +71,7 @@ gcloud storage rm --recursive gs://$DEVSHELL_PROJECT_ID
 
 <img width="1093" height="646" alt="image" src="https://github.com/user-attachments/assets/a63297b1-8b00-426f-b9d9-4ad20f0fe880" />
 
-*(Nota: Falta foto y explicación del comando al entrar al explorador de archivos).*
+
 
 ---
 
@@ -88,9 +88,37 @@ logName = ("projects/Project ID/logs/cloudaudit.googleapis.com%2Factivity")
 *   **`%2F`**: Es para evitar que la computadora no identifique bien  y sepa cuándo un símbolo es "solo texto" y no una instrucción. Ejemplos: Un espacio en blanco se disfraza como `%20`, el símbolo `@` se disfraza como `%40` y la barra diagonal (`/`) se disfraza como `%2F`.
 *   **`activity`**: Es la categoría del registro. Los registros de "Actividad de administración" graban cada vez que alguien crea, modifica o elimina un recurso.
 
-*(Nota: Falta foto del explorador de registros).*
+---
+En el lenguaje interno de las APIs de Google, el método para "crear" infraestructura se llama **`insert`** (insertar un nuevo recurso en la base de datos de Google). 
+
+En la siguiente imagen hay 4 registros porque las operaciones que tardan varios segundos en completarse generan múltiples registros más adelante en sql se empleará un scrip para poder descartar los demás. 
+
+<img width="1145" height="227" alt="image" src="https://github.com/user-attachments/assets/59c29041-98da-46b1-9dad-dc5a9f949409" />
 
 ---
+
+Al ver más a detalle los registros se puede observar que
+**Los 4 inserts se dividen así:**
+
+*   **Los primeros dos (13:30:28 y 13:30:52):** Son la creación de tu red `mynetwork`. El primer registro marca el milisegundo en que Google empezó a crear la red (`first: true`), y el segundo marca cuando terminó de crearla (`last: true`)
+
+<img width="985" height="323" alt="image" src="https://github.com/user-attachments/assets/fec9a603-e3f5-4f6c-9338-84d1891db2bc" />
+
+<img width="880" height="327" alt="image" src="https://github.com/user-attachments/assets/72fbca1a-6050-4fa9-9013-be33522f916b" />
+
+*   **Los últimos dos (13:30:59 y 13:31:09):** Son la creación de tu máquina virtual `default-us-vm`. Uno es el inicio del proceso y el otro es la confirmación de que la máquina ya está encendida.
+
+Además podemos conifrmar el recurso en `resource.type = gce_network` (Red de Compute Engine) o `gce_instance` (Instancia de Compute Engine).
+
+<img width="996" height="104" alt="image" src="https://github.com/user-attachments/assets/a4b9e620-5da0-4e42-b85b-5997de639ab8" />
+
+---
+
+### Registro rde IAM (`actAs`)
+
+Cuando creas una máquina virtual en Google Cloud, por defecto se le asigna una "Cuenta de Servicio" (*Compute Engine Default Service Account*) para que la máquina tenga permisos de hacer cosas por su cuenta
+
+Al final ese registro es la verificación con la cuenta de servicio para saber si podemos hacerlo
 
 ## Receptor de Enrutamiento de Registros (Sink)
 
@@ -164,7 +192,12 @@ Y podemos ver la eliminación de los recursos que se crearon posteriormente. En 
 Al final tenemos la ruta exacta. En cambio, si solo ocupamos la línea 3 será más lento, ya que no descartamos nada y es más costoso; por ello es buena práctica buscar por capas hasta llegar a lo que queremos.
 *(Nota: Falta foto y explicación del comando al entrar al explorador de archivos).*
 
----
+Antes nuestra cuenta con la que creamos y borramos era student-03(Atacante) y ahora es student-01
+<img width="1400" height="185" alt="image" src="https://github.com/user-attachments/assets/38ff301e-3c35-46fd-b1f3-4e5255d71bc5" />
+
+Al observar la  authenticationInfo :podemos ver el correo del atacante
+<img width="1138" height="227" alt="image" src="https://github.com/user-attachments/assets/87609c79-7bf7-4c42-ac69-e64bd9292658" />
+
 
 ##  SQL en BigQuery para Análisis 
 
@@ -228,6 +261,9 @@ LIMIT
 > 
 > *De los eventos que pasen todos estos filtros, extráe estos 5 datos: la fecha/hora exacta, el ID único de la máquina, el correo de quien ejecutó el borrado, la ruta completa del recurso en la nube y el nombre del método usado."*
 
+<img width="1161" height="266" alt="image" src="https://github.com/user-attachments/assets/0c683869-e087-4ca4-934d-0d90204ba0b6" />
+
+
 ###  Consulta para Monitoreo de Cloud Storage
 
 
@@ -272,3 +308,5 @@ ORDER BY
 LIMIT
   1000;
 ```
+<img width="1216" height="258" alt="image" src="https://github.com/user-attachments/assets/290284cc-0362-4d4e-a379-74c115edafc2" />
+
