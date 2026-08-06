@@ -114,7 +114,7 @@ Además podemos conifrmar el recurso en `resource.type = gce_network` (Red de Co
 
 ---
 
-### Registro rde IAM (`actAs`)
+### Registro de IAM (`actAs`)
 
 Cuando creas una máquina virtual en Google Cloud, por defecto se le asigna una "Cuenta de Servicio" (*Compute Engine Default Service Account*) para que la máquina tenga permisos de hacer cosas por su cuenta
 
@@ -257,7 +257,7 @@ LIMIT
 > 
 > *Sin embargo, para no gastar dinero escaneando años de historial, revisa el texto exacto que el asterisco está reemplazando en el nombre de cada tabla usando la variable `_TABLE_SUFFIX`. Convierte ese texto en una fecha matemática (`PARSE_DATE`) y abre únicamente las tablas cuyo sufijo de fecha caiga entre los últimos 7 días y el día de hoy; lo demás  no importa por ahora*
 > 
-> *De las tablas que abriste, fíltra. los eventos donde el recurso afectado sea estrictamente una máquina virtual (`gce_instance`), donde la orden específica haya sido eliminarla (`v1.compute.instances.delete`), y asegúrate de capturar solo el registro inicial de esa operación (`operation.first`) para no mostrarme filas duplicadas.*
+> *De las tablas que abriste fíltra. los eventos donde el recurso afectado sea estrictamente una máquina virtual (`gce_instance`), donde la orden específica haya sido eliminarla (`v1.compute.instances.delete`), y asegúrate de capturar solo el registro inicial de esa operación (`operation.first`) para no mostrarme filas duplicadas.*
 > 
 > *De los eventos que pasen todos estos filtros, extráe estos 5 datos: la fecha/hora exacta, el ID único de la máquina, el correo de quien ejecutó el borrado, la ruta completa del recurso en la nube y el nombre del método usado."*
 
